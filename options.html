@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <title>Настройки Quick Test Autofill</title>
+    <link rel="stylesheet" href="options.css">
+
+    <!-- базовые словари и карта placeholder-ов -->
+    <script src="data/dicts.js"></script>
+    <script src="data/placeholders.js"></script>
+
+    <!-- генераторы (нужны, чтобы показать «полный снимок» данных) -->
+    <script src="generators/index.js"></script>
+    <script src="generators/birthdate.js"></script>
+    <script src="generators/innfl.js"></script>
+    <script src="generators/innul.js"></script>
+    <script src="generators/snils.js"></script>
+    <script src="generators/ogrn.js"></script>
+    <script src="generators/ogrnip.js"></script>
+    <script src="generators/kpp.js"></script>
+
+    <!-- сам скрипт настроек -->
+    <script defer src="options.js"></script>
+</head>
+
+<body>
+    <div class="page">
+        <textarea id="jsonFields" placeholder="fields (словари)"></textarea>
+        <textarea id="jsonPH" placeholder="placeholders → data-field"></textarea>
+
+        <div class="actions">
+            <button id="save">Сохранить</button>
+            <button id="reset">Сбросить</button>
+        </div>
+    </div>
+</body>
+
+</html>
