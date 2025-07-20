@@ -16,3 +16,13 @@ function nameToField(nameAttr) {
 
     return clean;
 }
+
+/* helper: меняем value так, чтобы React это заметил */
+function setNativeValue(el, value) {
+    const proto = el.constructor.prototype;
+    const setter =
+        Object.getOwnPropertyDescriptor(proto, 'value')?.set ||
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+
+    setter ? setter.call(el, value) : (el.value = value);
+}
