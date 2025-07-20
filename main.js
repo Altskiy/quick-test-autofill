@@ -1,8 +1,7 @@
 (() => {
-    /* ---------- Данные -------------------------------------------------- */
     const defaultData = window.autofillData || {}; // словари из dicts.js
     const defaultPlaceholders = window.placeholderMap || {};
-    let customData = {}; // придёт из storage
+    let customData = {};
     let customPlaceholders = {};
 
     if (chrome?.storage?.sync) {
@@ -25,11 +24,11 @@
         if (msg?.type === "qt-enable") toggle(msg.enabled);
     });
 
-    /* ---------- Глобальные ссылки ------------------------------------- */
+    /* Глобальные ссылки */
     let activeBtn = null;
     let activeMenu = null;
 
-    /* ---------- Один общий MutationObserver --------------------------- */
+    /* Один общий MutationObserver */
     const observer = new MutationObserver(muts => {
         muts.forEach(m => m.addedNodes.forEach(n => {
             if (n.nodeType !== 1) return;
@@ -53,7 +52,7 @@
         if (state === isEnabled) return;
         isEnabled = state;
 
-        if (!isEnabled) {// ---------- OFF ----------
+        if (!isEnabled) {
             // 1. убрать добавленные элементы
             document.querySelectorAll(".qt-btn, .qt-menu").forEach(el => el.remove());
             activeBtn = activeMenu = null;
@@ -63,7 +62,7 @@
                 .forEach(el => el.removeAttribute('data-qt'));
 
             observer.disconnect();
-        } else {// ---------- ON -----------
+        } else {
             init();
             observer.observe(document.body, { childList: true, subtree: true });
         }
@@ -77,14 +76,14 @@
                 return;
             }
 
-            /* Поле невидимо (display:none или скрыт табом) — прячем стрелку */
+            /* Поле невидимо (display:none или скрыт табом) — прячем кнопку-кружок */
             const hidden = el.offsetParent === null || el.getClientRects().length === 0;
             if (hidden) {
                 btn.style.display = "none";
-                if (activeBtn === btn) hideMenu(); // закрыть меню, если было открыто
+                if (activeBtn === btn) hideMenu();
                 return;
             } else {
-                btn.style.display = ""; // вернуть, если таб снова показан
+                btn.style.display = "";
             }
 
             const r = el.getBoundingClientRect();
@@ -105,11 +104,11 @@
         }
     }
 
-    /* ------ запускаем при любом scroll/resize ------ */
+    /* запускаем при любом scroll/resize */
     window.addEventListener("scroll", reposition, true);
     window.addEventListener("resize", reposition);
 
-    /* ---------- Закрытие меню ---------------------- */
+    /* Закрытие меню */
     function hideMenu() {
         if (activeMenu) activeMenu.hidden = true;
         activeMenu = null;
@@ -127,7 +126,7 @@
     /* скролл вне меню */
     document.addEventListener("scroll", e => {
         if (activeMenu && !activeMenu.contains(e.target)) hideMenu();
-    }, true); // capture — ловим на всех контейнерах
+    }, true);
 
     function norm(str) {
         return str
@@ -148,7 +147,7 @@
         return clean;
     }
 
-    /* --- helper: меняем value так, чтобы React это заметил --- */
+    /* helper: меняем value так, чтобы React это заметил */
     function setNativeValue(el, value) {
         const proto = el.constructor.prototype;
         const setter =
@@ -158,7 +157,7 @@
         setter ? setter.call(el, value) : (el.value = value);
     }
 
-    /* ---------- Создаём кнопку и меню для одного поля ------------------ */
+    /* Создаём кнопку и меню для одного поля */
     function addButton(el) {
         if (!isEnabled) return;
 
@@ -169,7 +168,7 @@
         if (!fieldName && el.name) {
             const fromName = nameToField(el.name);
             if (
-                fromName === "inn" || fromName === "date" ||            // ← спец-ключи
+                fromName === "inn" || fromName === "date" ||
                 customData[fromName]?.length ||
                 defaultData[fromName]?.length ||
                 window.autofillGenerators?.[fromName] instanceof Function
@@ -202,16 +201,16 @@
         btn.className = "qt-btn";
         btn.innerHTML = `
             <svg viewBox="0 0 12 12" width="12" height="12">
-            <!-- контур круга -->
-            <circle cx="6" cy="6" r="5" stroke="#0d1d38" stroke-width="1.2" fill="none"/>
-            <!-- заливка (гаснет при :hover) -->
-            <circle class="dot" cx="6" cy="6" r="3" fill="#0d1d38"/>
-            <!-- три точки (появляются при :hover) -->
-            <g class="dots" fill="#0d1d38" fill-opacity="0">
-                <circle cx="4.5" cy="6" r="0.8"/>
-                <circle cx="6"   cy="6" r="0.8"/>
-                <circle cx="7.5" cy="6" r="0.8"/>
-            </g>
+                <!-- контур круга -->
+                <circle cx="6" cy="6" r="5" stroke="#0d1d38" stroke-width="1.2" fill="none"/>
+                <!-- заливка (гаснет при :hover) -->
+                <circle class="dot" cx="6" cy="6" r="3" fill="#0d1d38"/>
+                <!-- три точки (появляются при :hover) -->
+                <g class="dots" fill="#0d1d38" fill-opacity="0">
+                    <circle cx="4.5" cy="6" r="0.8"/>
+                    <circle cx="6"   cy="6" r="0.8"/>
+                    <circle cx="7.5" cy="6" r="0.8"/>
+                </g>
             </svg>
         `;
         document.body.appendChild(btn);
@@ -221,7 +220,7 @@
         el.style.paddingRight = `${pr + 20}px`;
 
         /* меню */
-        const menu = document.createElement("ul");
+        const menu = isInnGeneric || isDateGeneric ? document.createElement("div") : document.createElement("ul");
         menu.className = "qt-menu";
         menu.hidden = true;
         document.body.appendChild(menu);
@@ -253,60 +252,40 @@
 
         const fillMenu = () => {
             menu.innerHTML = "";
-            if (isInnGeneric) {
-                menu.className = "qt-menu qt-menu-inn";
+            /* --- двуколоночные варианты --- */
+            if (isInnGeneric || isDateGeneric) {
+                menu.className = `qt-menu`;
+                const menuContent = document.createElement("div");
+                menuContent.className = `${isInnGeneric ? "qt-menu-inn" : "qt-menu-date"}`;
+                menu.appendChild(menuContent);
                 const opts = makeOptions();
-
-                ["innfl", "innul"].forEach(key => {
-                    const col = document.createElement("ul");
-                    col.className = "qt-col";
-                    opts[key].forEach(v => {
-                        const li = document.createElement("li");
-                        li.textContent = v;
-                        li.onclick = (e) => {
-                            e.stopPropagation();
-                            //el.value = v;
-                            setNativeValue(el, v);
-                            el.dispatchEvent(new Event("input", { bubbles: true }));
-                            el.dispatchEvent(new Event('change', { bubbles: true }));   // для React 17+
-                            hideMenu();
-                        };
-                        col.appendChild(li);
-                    });
-                    const h = document.createElement("h4");
-                    h.textContent = key === "innfl" ? "ФЛ:" : "ЮЛ:";
-                    menu.appendChild(h);
-                    menu.appendChild(col);
-                });
-                return;
-            }
-            if (isDateGeneric) {
-                menu.className = "qt-menu qt-menu-date";
-                const opts = makeOptions();
-
-                [["past", "Прошлое:"], ["future", "Будущее:"]].forEach(([key, title]) => {
-                    const col = document.createElement("ul");
-                    col.className = "qt-col";
-                    opts[key].forEach(v => {
-                        const li = document.createElement("li");
-                        li.textContent = v;
-                        li.onclick = (e) => {
-                            e.stopPropagation();
-                            //el.value = v;
-                            setNativeValue(el, v);
-                            el.dispatchEvent(new Event("input", { bubbles: true }));
-                            el.dispatchEvent(new Event('change', { bubbles: true }));   // для React 17+
-                            hideMenu();
-                        };
-                        col.appendChild(li);
-                    });
+                const layout = isInnGeneric
+                    ? [["innfl", "ФЛ:"], ["innul", "ЮЛ:"]]
+                    : [["past", "Прошлое:"], ["future", "Будущее:"]];
+                layout.forEach(([key, title]) => {
                     const h = document.createElement("h4");
                     h.textContent = title;
-                    menu.appendChild(h);
-                    menu.appendChild(col);
+                    menuContent.appendChild(h);
+
+                    const col = document.createElement("ul");
+                    col.className = "qt-col";
+                    opts[key].forEach(v => {
+                        const li = document.createElement("li");
+                        li.textContent = v;
+                        li.onclick = (e) => {
+                            e.stopPropagation();
+                            setNativeValue(el, v);
+                            el.dispatchEvent(new Event("input", { bubbles: true }));
+                            el.dispatchEvent(new Event("change", { bubbles: true }));
+                            hideMenu();
+                        };
+                        col.appendChild(li);
+                    });
+                    menuContent.appendChild(col);
                 });
                 return;
             }
+            /* --- одна колонка --- */
             makeOptions().forEach(v => {
                 const li = document.createElement("li");
                 li.textContent = v;
@@ -337,7 +316,7 @@
         reposition();
     }
 
-    /* ---------- Инициализация -------------------------------- */
+    /* Инициализация */
     function init() {
         process(document.querySelectorAll(
             'input:not([data-qt]):not([type="hidden"]):not([type="submit"]), ' +

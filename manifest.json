@@ -33,6 +33,7 @@
                 "generators/ogrn.js",
                 "generators/ogrnip.js",
                 "generators/kpp.js",
+                "helpers.js",
                 "main.js"
             ],
             "css": [
