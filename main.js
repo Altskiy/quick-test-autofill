@@ -25,7 +25,7 @@
         if (msg?.type === "qt-enable") toggle(msg.enabled);
     });
 
-    /* ---------- Глобальные ссылки -------------------------------------- */
+    /* ---------- Глобальные ссылки ------------------------------------- */
     let activeBtn = null;
     let activeMenu = null;
 
@@ -43,7 +43,6 @@
 
             if (inside?.length) inside.forEach(addButton);
         }));
-        // любое изменение DOM ⇒ пересчитать координаты
         reposition();
     });
 
@@ -106,11 +105,11 @@
         }
     }
 
-    /* запускаем при любом scroll/resize ------------- */
+    /* ------ запускаем при любом scroll/resize ------ */
     window.addEventListener("scroll", reposition, true);
     window.addEventListener("resize", reposition);
 
-    /* ---------- Закрытие меню ------------------------------------------ */
+    /* ---------- Закрытие меню ---------------------- */
     function hideMenu() {
         if (activeMenu) activeMenu.hidden = true;
         activeMenu = null;
@@ -138,12 +137,47 @@
             .trim();
     }
 
+    function nameToField(nameAttr) {
+        if (!nameAttr) return "";
+
+        const clean = nameAttr
+            .replace(/\[[^\]]*]/g, "")
+            .split(".").pop()
+            .trim();
+
+        return clean;
+    }
+
+    /* --- helper: меняем value так, чтобы React это заметил --- */
+    function setNativeValue(el, value) {
+        const proto = el.constructor.prototype;
+        const setter =
+            Object.getOwnPropertyDescriptor(proto, 'value')?.set ||
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+
+        setter ? setter.call(el, value) : (el.value = value);
+    }
+
     /* ---------- Создаём кнопку и меню для одного поля ------------------ */
     function addButton(el) {
         if (!isEnabled) return;
 
         /* приоритет — data-field */
         let fieldName = el.dataset.field?.trim();
+
+        /* далее name, его чистим от лишнего(скобочек, точек и прочего мусора) */
+        if (!fieldName && el.name) {
+            const fromName = nameToField(el.name);
+            if (
+                fromName === "inn" || fromName === "date" ||            // ← спец-ключи
+                customData[fromName]?.length ||
+                defaultData[fromName]?.length ||
+                window.autofillGenerators?.[fromName] instanceof Function
+            ) {
+                fieldName = fromName;
+            }
+        }
+
         /* если нет — берём placeholder и ищем в карте */
         if (!fieldName && el.placeholder) {
             const ph = norm(el.placeholder);
@@ -229,9 +263,12 @@
                     opts[key].forEach(v => {
                         const li = document.createElement("li");
                         li.textContent = v;
-                        li.onclick = () => {
-                            el.value = v;
+                        li.onclick = (e) => {
+                            e.stopPropagation();
+                            //el.value = v;
+                            setNativeValue(el, v);
                             el.dispatchEvent(new Event("input", { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));   // для React 17+
                             hideMenu();
                         };
                         col.appendChild(li);
@@ -253,7 +290,14 @@
                     opts[key].forEach(v => {
                         const li = document.createElement("li");
                         li.textContent = v;
-                        li.onclick = () => { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); hideMenu(); };
+                        li.onclick = (e) => {
+                            e.stopPropagation();
+                            //el.value = v;
+                            setNativeValue(el, v);
+                            el.dispatchEvent(new Event("input", { bubbles: true }));
+                            el.dispatchEvent(new Event('change', { bubbles: true }));   // для React 17+
+                            hideMenu();
+                        };
                         col.appendChild(li);
                     });
                     const h = document.createElement("h4");
@@ -266,9 +310,12 @@
             makeOptions().forEach(v => {
                 const li = document.createElement("li");
                 li.textContent = v;
-                li.onclick = () => {
-                    el.value = v;
+                li.onclick = (e) => {
+                    e.stopPropagation();
+                    //el.value = v;
+                    setNativeValue(el, v);
                     el.dispatchEvent(new Event("input", { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));   // для React 17+
                     hideMenu();
                 };
                 menu.appendChild(li);

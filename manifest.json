@@ -4,7 +4,7 @@
     "homepage_url": "https://github.com/username/quick-test-autofill",
     "author": "Altskiy",
     "license": "MIT",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "manifest_version": 3,
     "permissions": [
         "storage",
