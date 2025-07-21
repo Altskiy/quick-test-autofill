@@ -15,6 +15,7 @@
         });
     } else init();
 
+    // Включение-выключение расширения через кнопку в шапке браузера
     let isEnabled = true;
     chrome.storage.local.get("qtEnabled", ({ qtEnabled }) => {
         if (qtEnabled === false) {
@@ -25,6 +26,15 @@
 
     chrome.runtime.onMessage.addListener((msg) => {
         if (msg?.type === "qt-enable") toggle(msg.enabled);
+    });
+
+    // Включение-выключение автоматического режима заполнения
+    let autoSelect = false;
+    chrome.storage.local.get("qtAutoSelect", ({ qtAutoSelect }) => {
+        autoSelect = !!qtAutoSelect;
+    });
+    chrome.runtime.onMessage.addListener(msg => {
+        if (msg?.type === "qt-auto-select") autoSelect = !!msg.enabled;
     });
 
     /* Глобальные ссылки */
@@ -220,13 +230,26 @@
             if (window.autofillGenerators?.[fieldName] instanceof Function)
                 return Array.from({ length: 5 }, window.autofillGenerators[fieldName]);
 
-            /* иначе — базовый словарь */
+            /* иначе базовый словарь */
             return defaultData[fieldName];
+        }
+
+        const quickFillRandom = () => {
+            const opts = makeOptions();
+            const rnd = Array.isArray(opts)
+                ? opts[Math.floor(Math.random() * opts.length)]
+                : null; // сюда попадают только простые списки
+
+            if (!rnd) return showMenu(); // вдруг options вдруг пуст
+
+            setNativeValue(el, rnd);
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            el.dispatchEvent(new Event("change", { bubbles: true }));
         }
 
         const fillMenu = () => {
             menu.innerHTML = "";
-            /* --- двуколоночные варианты --- */
+            /* двуколоночные варианты */
             if (isInnGeneric || isDateGeneric) {
                 menu.className = `qt-menu`;
                 const menuContent = document.createElement("div");
@@ -265,10 +288,9 @@
                 li.textContent = v;
                 li.onclick = (e) => {
                     e.stopPropagation();
-                    //el.value = v;
                     setNativeValue(el, v);
                     el.dispatchEvent(new Event("input", { bubbles: true }));
-                    el.dispatchEvent(new Event('change', { bubbles: true }));   // для React 17+
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
                     hideMenu();
                 };
                 menu.appendChild(li);
@@ -285,7 +307,14 @@
             reposition();
         }
 
-        btn.addEventListener("click", e => { e.stopPropagation(); showMenu(); });
+        btn.addEventListener("click", e => {
+            e.stopPropagation();
+            if (autoSelect && !isInnGeneric && !isDateGeneric) {
+                quickFillRandom();
+            } else {
+                showMenu();
+            }
+        });
 
         reposition();
     }
