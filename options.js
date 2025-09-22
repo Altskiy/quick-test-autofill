@@ -2,6 +2,17 @@ const tf = document.getElementById("jsonFields"); // левая 65 %
 const tp = document.getElementById("jsonPH");     // правая 35 %
 const save = document.getElementById("save");
 const reset = document.getElementById("reset");
+const autoSelectToggle = document.getElementById("autoSelect");
+
+if (autoSelectToggle) {
+    chrome.storage.local.get("qtAutoSelect", ({ qtAutoSelect }) => {
+        autoSelectToggle.checked = !!qtAutoSelect;
+    });
+
+    autoSelectToggle.addEventListener("change", () => {
+        chrome.storage.local.set({ qtAutoSelect: autoSelectToggle.checked });
+    });
+}
 
 /* ------------------------------------------------------------------ */
 /* 1.  Базовые словари и карта, уже созданы скриптами dicts.js, …      */

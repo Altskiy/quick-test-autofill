@@ -37,6 +37,13 @@
         if (msg?.type === "qt-auto-select") autoSelect = !!msg.enabled;
     });
 
+    chrome.storage.onChanged?.addListener((changes, areaName) => {
+        if (areaName === "local" && Object.prototype.hasOwnProperty.call(changes, "qtAutoSelect")) {
+            autoSelect = !!changes.qtAutoSelect.newValue;
+        }
+    });
+
+
     /* Глобальные ссылки */
     let activeBtn = null;
     let activeMenu = null;
