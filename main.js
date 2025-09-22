@@ -210,6 +210,17 @@
         document.body.appendChild(menu);
 
         /* создаём список значений */
+        const pickRandom = (source, size = 5) => {
+            if (!Array.isArray(source) || source.length === 0) return [];
+            if (source.length <= size) return source.slice();
+            const pool = source.slice();
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            return pool.slice(0, size);
+        };
+
         const makeOptions = () => {
             if (isInnGeneric) {
                 return {
@@ -231,7 +242,7 @@
                 return Array.from({ length: 5 }, window.autofillGenerators[fieldName]);
 
             /* иначе базовый словарь */
-            return defaultData[fieldName];
+            return pickRandom(defaultData[fieldName]);
         }
 
         const quickFillRandom = () => {
@@ -329,3 +340,4 @@
 
     function process(nl) { nl.forEach(addButton); }
 })();
+
