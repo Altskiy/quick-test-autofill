@@ -157,14 +157,19 @@
                 defaultData[fromName]?.length ||
                 window.autofillGenerators?.[fromName] instanceof Function
             ) {
-                fieldName = fromName;
+            fieldName = fromName;
             }
         }
 
         /* если нет — берём placeholder и ищем в карте */
-        if (!fieldName && el.placeholder) {
-            const ph = norm(el.placeholder);
-            fieldName = customPlaceholders[ph] || defaultPlaceholders[ph];
+                if (!fieldName && el.placeholder) {
+            const lower = el.placeholder.toLowerCase().trim();
+            const withoutPrompt = lower.replace(/^\s*введите\s+/, "").trim();
+            fieldName =
+                customPlaceholders[lower] ||
+                customPlaceholders[withoutPrompt] ||
+                defaultPlaceholders[lower] ||
+                defaultPlaceholders[withoutPrompt];
         }
 
         const isInnGeneric = fieldName === "inn";
