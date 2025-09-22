@@ -6,22 +6,29 @@
     const defaultPlaceholders = window.placeholderMap || {};
     let customData = {};
     let customPlaceholders = {};
+    let isEnabled = false;
+    let dataReady = true;
 
     if (chrome?.storage?.sync) {
+        dataReady = false;
         chrome.storage.sync.get(["fields", "placeholders"], res => {
             if (res.fields) customData = res.fields;
             if (res.placeholders) customPlaceholders = res.placeholders;
-            init();
+            dataReady = true;
+            if (isEnabled) init();
         });
-    } else init();
+    }
+
 
     // Включение-выключение расширения через кнопку в шапке браузера
-    let isEnabled = true;
+
     chrome.storage.local.get("qtEnabled", ({ qtEnabled }) => {
-        if (qtEnabled === false) {
-            isEnabled = false;
+        isEnabled = qtEnabled !== false;
+        if (isEnabled) {
+            init();
+        } else {
+            refreshUi();
         }
-        if (isEnabled) init();
     });
 
     chrome.runtime.onMessage.addListener((msg) => {
@@ -359,12 +366,13 @@
 
     /* Инициализация */
     function init() {
+        if (!isEnabled || !dataReady) return;
+
         process(document.querySelectorAll(
             'input:not([data-qt]):not([type="hidden"]):not([type="submit"]), ' +
             'textarea:not([data-qt])'
         ));
     }
-
     function process(nl) { nl.forEach(addButton); }
 })();
 

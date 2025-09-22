@@ -8,6 +8,33 @@ const ICON_OFF = {
     "32": "icons/icon_off_32.png"
 };
 
+function sendMessageToAllFrames(tabId, message) {
+    if (!chrome.tabs?.sendMessage) return;
+
+    const fallback = () => chrome.tabs.sendMessage(tabId, message, () => void chrome.runtime.lastError);
+
+    if (!chrome.webNavigation?.getAllFrames) {
+        fallback();
+        return;
+    }
+
+    chrome.webNavigation.getAllFrames({ tabId }, (frames) => {
+        if (chrome.runtime.lastError || !Array.isArray(frames) || frames.length === 0) {
+            fallback();
+            return;
+        }
+
+        frames.forEach((frame) => {
+            chrome.tabs.sendMessage(
+                tabId,
+                message,
+                { frameId: frame.frameId },
+                () => void chrome.runtime.lastError
+            );
+        });
+    });
+}
+
 let enabled = true;
 
 function updateIcon(state) {
@@ -17,7 +44,7 @@ function updateIcon(state) {
 function broadcast(state) {
     chrome.tabs.query({}, (tabs) => {
         tabs.forEach((tab) => {
-            chrome.tabs.sendMessage(tab.id, { type: "qt-enable", enabled: state });
+            sendMessageToAllFrames(tab.id, { type: "qt-enable", enabled: state });
         });
     });
 }
@@ -63,7 +90,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg?.type === "qt-force-refresh") {
         chrome.tabs.query({}, (tabs) => {
             tabs.forEach((tab) => {
-                chrome.tabs.sendMessage(tab.id, { type: "qt-refresh" });
+                sendMessageToAllFrames(tab.id, { type: "qt-refresh" });
             });
             sendResponse?.({ ok: true });
         });
