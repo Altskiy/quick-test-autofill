@@ -1,19 +1,62 @@
+const ICON_ON = {
+    "16": "icons/icon_on_16.png",
+    "32": "icons/icon_on_32.png"
+};
+
+const ICON_OFF = {
+    "16": "icons/icon_off_16.png",
+    "32": "icons/icon_off_32.png"
+};
+
 let enabled = true;
 
-chrome.action.onClicked.addListener(() => {
-    enabled = !enabled;
+function updateIcon(state) {
+    chrome.action.setIcon({ path: state ? ICON_ON : ICON_OFF });
+}
 
-    chrome.action.setIcon({
-        path: enabled
-            ? { "16": "icons/icon_on_16.png", "32": "icons/icon_on_32.png" }
-            : { "16": "icons/icon_off_16.png", "32": "icons/icon_off_32.png" }
+function broadcast(state) {
+    chrome.tabs.query({}, (tabs) => {
+        tabs.forEach((tab) => {
+            chrome.tabs.sendMessage(tab.id, { type: "qt-enable", enabled: state });
+        });
     });
+}
 
-    chrome.storage.local.set({ qtEnabled: enabled });
+function applyState(state, { notify = false } = {}) {
+    enabled = !!state;
+    updateIcon(enabled);
+    if (notify) {
+        broadcast(enabled);
+    }
+}
 
-    chrome.tabs.query({}, tabs => {
-        for (const t of tabs) {
-            chrome.tabs.sendMessage(t.id, { type: "qt-enable", enabled });
-        }
-    });
+chrome.storage.local.get("qtEnabled", (data) => {
+    if (Object.prototype.hasOwnProperty.call(data, "qtEnabled")) {
+        applyState(data.qtEnabled !== false, { notify: data.qtEnabled === false });
+    } else {
+        chrome.storage.local.set({ qtEnabled: true });
+        applyState(true);
+    }
+});
+
+chrome.storage.onChanged?.addListener((changes, areaName) => {
+    if (areaName !== "local" || !Object.prototype.hasOwnProperty.call(changes, "qtEnabled")) {
+        return;
+    }
+
+    const nextState = changes.qtEnabled.newValue !== false;
+    if (nextState === enabled) {
+        return;
+    }
+
+    applyState(nextState, { notify: true });
+});
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg?.type === "qt-extension-toggle") {
+        const desired = !!msg.enabled;
+        applyState(desired, { notify: true });
+        chrome.storage.local.set({ qtEnabled: desired }, () => sendResponse?.({ ok: true }));
+        return true;
+    }
 });
