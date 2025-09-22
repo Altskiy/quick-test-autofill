@@ -59,4 +59,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         chrome.storage.local.set({ qtEnabled: desired }, () => sendResponse?.({ ok: true }));
         return true;
     }
+
+    if (msg?.type === "qt-force-refresh") {
+        chrome.tabs.query({}, (tabs) => {
+            tabs.forEach((tab) => {
+                chrome.tabs.sendMessage(tab.id, { type: "qt-refresh" });
+            });
+            sendResponse?.({ ok: true });
+        });
+        return true;
+    }
 });

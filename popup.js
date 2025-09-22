@@ -1,5 +1,6 @@
 ﻿const extensionToggle = document.getElementById("toggleExtension");
 const autoSelectToggle = document.getElementById("toggleAutoSelect");
+const forceRefreshBtn = document.getElementById("forceRefresh");
 
 function applyInitialState() {
     chrome.storage.local.get(["qtEnabled", "qtAutoSelect"], (data) => {
@@ -24,6 +25,33 @@ function handleAutoSelectChange() {
 
 extensionToggle.addEventListener("change", handleExtensionChange);
 autoSelectToggle.addEventListener("change", handleAutoSelectChange);
+
+if (forceRefreshBtn) {
+    const resetState = () => {
+        forceRefreshBtn.disabled = false;
+        forceRefreshBtn.textContent = "Обновить кнопки";
+    };
+
+    forceRefreshBtn.addEventListener("click", () => {
+        if (forceRefreshBtn.disabled) return;
+        forceRefreshBtn.disabled = true;
+        forceRefreshBtn.textContent = "Обновляем...";
+
+        const fallback = setTimeout(resetState, 2000);
+
+        chrome.runtime.sendMessage({ type: "qt-force-refresh" }, () => {
+            clearTimeout(fallback);
+
+            if (chrome.runtime.lastError) {
+                resetState();
+                return;
+            }
+
+            forceRefreshBtn.textContent = "Готово";
+            setTimeout(resetState, 800);
+        });
+    });
+}
 
 chrome.storage.onChanged?.addListener((changes, areaName) => {
     if (areaName !== "local") return;

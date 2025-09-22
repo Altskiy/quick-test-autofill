@@ -26,6 +26,7 @@
 
     chrome.runtime.onMessage.addListener((msg) => {
         if (msg?.type === "qt-enable") toggle(msg.enabled);
+        if (msg?.type === "qt-refresh") refreshUi();
     });
 
     // Включение-выключение автоматического режима заполнения
@@ -83,6 +84,20 @@
 
             observer.disconnect();
         } else {
+            init();
+            observer.observe(document.body, { childList: true, subtree: true });
+        }
+    }
+
+    function refreshUi() {
+        document.querySelectorAll('.qt-btn, .qt-menu').forEach(el => el.remove());
+        activeBtn = activeMenu = null;
+
+        document.querySelectorAll('[data-qt]').forEach(el => el.removeAttribute('data-qt'));
+
+        observer.disconnect();
+
+        if (isEnabled) {
             init();
             observer.observe(document.body, { childList: true, subtree: true });
         }

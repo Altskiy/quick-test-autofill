@@ -65,3 +65,28 @@ body {
 .toggle input[type="checkbox"]:checked::after {
     transform: translateX(18px);
 }
+
+.refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    background: #0d75ff;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background: #0a5dcc;
+}
+
+.refresh-btn:disabled {
+    background: #9cb9e7;
+    cursor: default;
+}
